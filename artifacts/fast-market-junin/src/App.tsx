@@ -32,6 +32,8 @@ const whatsappUrl = 'https://wa.me/5492364206053';
 type Offer = {
   id: number;
   icon: 'basket' | 'milk' | 'beer' | 'package' | 'wine';
+  image: string;
+  alt: string;
   name: string;
   detail: string;
   previous: string;
@@ -39,10 +41,10 @@ type Offer = {
 };
 
 const initialOffers: Offer[] = [
-  { id: 1, icon: 'package', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990' },
-  { id: 2, icon: 'package', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990' },
-  { id: 3, icon: 'wine', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490' },
-  { id: 4, icon: 'beer', name: 'Cerveza Quilmes', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790' },
+  { id: 1, icon: 'package', image: '/products/milka-oreo.jpg', alt: 'Tableta de chocolate Milka Oreo', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990' },
+  { id: 2, icon: 'package', image: '/products/bon-o-bon.jpg', alt: 'Pack de chocolates Bon o Bon', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990' },
+  { id: 3, icon: 'wine', image: '/products/vino-tinto.jpg', alt: 'Botella de vino tinto', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490' },
+  { id: 4, icon: 'beer', image: '/products/cerveza-corona.jpg', alt: 'Lata de cerveza Corona Extra', name: 'Cerveza Corona Extra', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790' },
 ];
 
 const branches = [
@@ -182,7 +184,7 @@ function Offers() {
             <article className="fm-offer-card" key={offer.id} data-testid={`card-offer-${offer.id}`}>
               <div className="fm-offer-image">
                 <span className="fm-offer-badge">OFERTA</span>
-                <span className="fm-offer-icon" data-testid={`img-placeholder-offer-${offer.id}`}><OfferIcon icon={offer.icon} /></span>
+                <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-offer-${offer.id}`} />
                 <button className="fm-offer-edit" type="button" onClick={() => setEditingId(editingId === offer.id ? null : offer.id)} aria-label={`Editar oferta ${offer.id}`} data-testid={`button-edit-offer-${offer.id}`}>
                   {editingId === offer.id ? <X size={15} /> : <Edit3 size={15} />}
                 </button>
