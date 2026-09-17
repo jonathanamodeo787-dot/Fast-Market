@@ -16,6 +16,7 @@ import {
   ShoppingBasket,
   Snowflake,
   Truck,
+  Wine,
   X,
 } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,7 +31,7 @@ const whatsappUrl = 'https://wa.me/5492364206053';
 
 type Offer = {
   id: number;
-  icon: 'basket' | 'milk' | 'beer' | 'package';
+  icon: 'basket' | 'milk' | 'beer' | 'package' | 'wine';
   name: string;
   detail: string;
   previous: string;
@@ -38,10 +39,10 @@ type Offer = {
 };
 
 const initialOffers: Offer[] = [
-  { id: 1, icon: 'basket', name: 'Nombre del producto', detail: 'Presentación [A CONFIRMAR]', previous: 'Precio anterior [A CONFIRMAR]', current: 'Precio oferta [A CONFIRMAR]' },
-  { id: 2, icon: 'milk', name: 'Nombre del producto', detail: 'Presentación [A CONFIRMAR]', previous: 'Precio anterior [A CONFIRMAR]', current: 'Precio oferta [A CONFIRMAR]' },
-  { id: 3, icon: 'beer', name: 'Nombre del producto', detail: 'Presentación [A CONFIRMAR]', previous: 'Precio anterior [A CONFIRMAR]', current: 'Precio oferta [A CONFIRMAR]' },
-  { id: 4, icon: 'package', name: 'Nombre del producto', detail: 'Presentación [A CONFIRMAR]', previous: 'Precio anterior [A CONFIRMAR]', current: 'Precio oferta [A CONFIRMAR]' },
+  { id: 1, icon: 'package', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990' },
+  { id: 2, icon: 'package', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990' },
+  { id: 3, icon: 'wine', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490' },
+  { id: 4, icon: 'beer', name: 'Cerveza Quilmes', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790' },
 ];
 
 const branches = [
@@ -65,7 +66,7 @@ const branches = [
 function Logo() {
   return (
     <span className="fm-logo" data-testid="brand-logo">
-      <span className="fm-logo-mark" aria-hidden="true"><span>FM</span></span>
+      <img className="fm-logo-image" src="/fast-market-logo.jpg" alt="" aria-hidden="true" />
       <span>
         <span className="fm-logo-word">Fast Market</span>
         <span className="fm-logo-place">Junín · cerca tuyo</span>
@@ -77,6 +78,7 @@ function Logo() {
 function OfferIcon({ icon }: { icon: Offer['icon'] }) {
   if (icon === 'milk') return <Milk size={68} strokeWidth={1.2} />;
   if (icon === 'beer') return <Beer size={68} strokeWidth={1.2} />;
+  if (icon === 'wine') return <Wine size={68} strokeWidth={1.2} />;
   if (icon === 'package') return <PackageOpen size={68} strokeWidth={1.2} />;
   return <ShoppingBasket size={68} strokeWidth={1.2} />;
 }
@@ -173,7 +175,7 @@ function Offers() {
             <span className="fm-eyebrow">Lo que conviene mirar</span>
             <h2 className="fm-section-title">Ofertas de la semana</h2>
           </div>
-          <p className="fm-section-copy">Valores y productos a confirmar. Esta grilla está lista para actualizar con las ofertas vigentes.</p>
+          <p className="fm-section-copy">Productos conocidos para una compra rápida. Estos precios son de prueba y están listos para actualizar.</p>
         </div>
         <div className="fm-offers-grid">
           {offers.map((offer) => (
@@ -209,7 +211,7 @@ function Offers() {
             </article>
           ))}
         </div>
-        <p className="fm-confirm-note" data-testid="text-offers-confirmation">* Precios, productos e imágenes de ejemplo — [A CONFIRMAR].</p>
+        <p className="fm-confirm-note" data-testid="text-offers-confirmation">* Precios de prueba, sujetos a actualización según las ofertas vigentes.</p>
       </div>
     </section>
   );

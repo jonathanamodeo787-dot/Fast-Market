@@ -1,0 +1,50 @@
+Crea una página web para Fast Market Junín (supermercado de barrio, Junín, Argentina).
+
+ESPECIFICACIONES VISUALES:
+- Verde: #1a6b3a (oscuro, energía)
+- Amarillo: #ffc107 (ofertas, atención)
+- Blanco: #ffffff (base, claridad)
+- Fuente: sans-serif, bold para títulos
+- Estilo: dinámico, energético, moderno pero accesible
+- Diseño mobile-first, responsive
+
+DATOS CONFIRMADOS (USE EXACTO):
+Tagline: "Siempre cerca tuyo, siempre al mejor precio!"
+WhatsApp: 2364206053
+Instagram: @fastmarketjunin (placeholder - confirmar)
+
+SUCURSALES:
+1. Av. República 929
+   L-S: 9:00 a 21:30 | D: 10:00-13:30 y 17:00-21:30
+
+2. Remedios de Escalada de San Martín 25
+   L-S: 9:00 a 21:00 | D: 10:00-13:30 y 17:00-21:30
+
+3. Primera Junta 1102
+   L-S: 9:00 a 21:00 | D: 10:00-13:30 y 17:00-21:30
+
+ESTRUCTURA PÁGINA (secciones en orden):
+1. HEADER - Logo, nav simple, botón contacto
+2. HERO - Tagline, 3 botones: [OFERTAS] [DELIVERY] [SUCURSALES]
+3. OFERTAS - Grid 2-3 columnas, tarjetas con precio anterior/nuevo, etiqueta "OFERTA"
+4. DELIVERY - Imagen, texto "Los mejores precios - Más cerca tuyo", botón WhatsApp directo
+5. SUCURSALES - 3 tarjetas con direcciones, horarios, botón "Google Maps"
+6. CATEGORÍAS - Grid con categorías (Bebidas, Lácteos, Almacén, Congelados, etc.)
+7. CONTACTO - WhatsApp, Instagram, valores (Calidad | Precios Bajos | Atención Siempre)
+8. FOOTER - Info rápida
+
+OFERTAS EJEMPLO (editable):
+- Ofertas con imagen placeholder, nombre, precio anterior ~~$X~~, precio nuevo $Y
+- Etiqueta amarilla "OFERTA"
+- Preparar array JSON para actualizar fácil
+
+REGLAS:
+- NO inventar info no confirmada
+- Usar placeholders [A CONFIRMAR] si falta algo
+- Código limpio, comentado, fácil de editar
+- Funcional en mobile (60% del tráfico)
+- Botones con click a WhatsApp: wa.me/5492364206053
+- Sin APIs externas, solo HTML/CSS/JS vanilla
+- Colores exactos del brief visual
+
+IMPORTANTE: Mantén SIEMPRE el estilo dinámico y energético de Fast Market. No hagas algo minimalista o corporate. Energía de supermercado de barrio.
