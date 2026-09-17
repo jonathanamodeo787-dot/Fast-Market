@@ -130,7 +130,7 @@ function Hero() {
       <div className="fm-container fm-hero-grid">
         <div className="fm-reveal">
           <p className="fm-hero-kicker">Supermercado de barrio · Junín</p>
-          <h1 className="fm-hero-title">Siempre cerca <em>tuyo</em>,<br />siempre al mejor precio!</h1>
+          <h1 className="fm-hero-title text-[98px]">Siempre cerca <em>tuyo</em>,<br />siempre al mejor precio!</h1>
           <p className="fm-hero-text">
             Todo lo que necesitás para el día a día, a mano y sin vueltas. Encontrá tu Fast Market más cercano.
           </p>
