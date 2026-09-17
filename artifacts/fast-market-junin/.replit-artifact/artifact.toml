@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Fast Market Junín"
+description = "Sitio web mobile-first para el supermercado de barrio Fast Market Junín, con ofertas, delivery por WhatsApp, sucursales, categorías y datos de contacto."
+version = "1.0.0"
+id = "artifacts/fast-market-junin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22562
+
+[services.development]
+run = "pnpm --filter @workspace/fast-market-junin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fast-market-junin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/fast-market-junin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22562"
+BASE_PATH = "/"
