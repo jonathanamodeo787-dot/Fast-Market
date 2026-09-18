@@ -1,20 +1,24 @@
-import { type ReactNode, useState } from 'react';
+import { type ChangeEvent, type ReactNode, useEffect, useState } from 'react';
 import {
   ArrowRight,
   Beer,
   ChevronUp,
   Clock3,
-  Edit3,
   ExternalLink,
+  ImagePlus,
   Instagram,
+  LockKeyhole,
+  LogOut,
   MapPin,
   Menu,
   MessageCircle,
   Milk,
   PackageOpen,
+  Plus,
   Save,
   ShoppingBasket,
   Snowflake,
+  Trash2,
   Truck,
   Wine,
   X,
@@ -28,24 +32,45 @@ import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
 const whatsappUrl = 'https://wa.me/5492364206053';
+const offersStorageKey = 'fast-market-junin-offers';
+const adminUsername = 'admin';
+const adminPassword = 'fastmarket';
 
+type Category = 'Bebidas' | 'Lácteos' | 'Almacén' | 'Congelados';
 type Offer = {
   id: number;
   icon: 'basket' | 'milk' | 'beer' | 'package' | 'wine';
-  image: string;
+  image?: string;
   alt: string;
   name: string;
   detail: string;
   previous: string;
   current: string;
+  category: Category;
+  comment?: string;
 };
 
 const initialOffers: Offer[] = [
-  { id: 1, icon: 'package', image: '/products/milka-oreo.jpg', alt: 'Tableta de chocolate Milka Oreo', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990' },
-  { id: 2, icon: 'package', image: '/products/bon-o-bon.jpg', alt: 'Pack de chocolates Bon o Bon', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990' },
-  { id: 3, icon: 'wine', image: '/products/vino-tinto.jpg', alt: 'Botella de vino tinto', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490' },
-  { id: 4, icon: 'beer', image: '/products/cerveza-corona.jpg', alt: 'Lata de cerveza Corona Extra', name: 'Cerveza Corona Extra', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790' },
+  { id: 1, icon: 'package', image: '/products/milka-oreo.jpg', alt: 'Tableta de chocolate Milka Oreo', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990', category: 'Almacén' },
+  { id: 2, icon: 'package', image: '/products/bon-o-bon.jpg', alt: 'Pack de chocolates Bon o Bon', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990', category: 'Almacén' },
+  { id: 3, icon: 'wine', image: '/products/vino-tinto.jpg', alt: 'Botella de vino tinto', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490', category: 'Bebidas' },
+  { id: 4, icon: 'beer', image: '/products/cerveza-corona.jpg', alt: 'Lata de cerveza Corona Extra', name: 'Cerveza Corona Extra', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790', category: 'Bebidas' },
+  { id: 5, icon: 'milk', image: '/products/leche-serenisima.jpg', alt: 'Caja de leche entera La Serenísima', name: 'Leche entera La Serenísima', detail: 'Pack 1 litro', previous: '$ 1.900', current: '$ 1.590', category: 'Lácteos' },
+  { id: 6, icon: 'package', image: '/products/fideos-conzazoni.jpg', alt: 'Paquete de fideos Conzazoni', name: 'Fideos secos', detail: 'Paquete 500 g', previous: '$ 1.700', current: '$ 1.390', category: 'Almacén' },
+  { id: 7, icon: 'basket', image: '/products/papas-mccain.jpg', alt: 'Paquete de papas fritas congeladas McCain', name: 'Papas congeladas McCain', detail: 'Paquete 900 g', previous: '$ 5.900', current: '$ 4.990', category: 'Congelados' },
 ];
+
+function loadOffers(): Offer[] {
+  if (typeof window === 'undefined') return initialOffers;
+  try {
+    const stored = window.localStorage.getItem(offersStorageKey);
+    if (!stored) return initialOffers;
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : initialOffers;
+  } catch {
+    return initialOffers;
+  }
+}
 
 const branches = [
   {
@@ -85,13 +110,16 @@ function OfferIcon({ icon }: { icon: Offer['icon'] }) {
   return <ShoppingBasket size={68} strokeWidth={1.2} />;
 }
 
-function Header() {
+function Header({ onOpenAdmin }: { onOpenAdmin: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <header className="fm-header" data-testid="header-site">
       <div className="fm-container fm-header-inner">
+        <button className="fm-restricted-link" type="button" onClick={onOpenAdmin} data-testid="button-restricted-access">
+          Acceso restringido
+        </button>
         <a href="#inicio" onClick={closeMenu} aria-label="Ir al inicio de Fast Market Junín" data-testid="link-logo">
           <Logo />
         </a>
@@ -161,14 +189,8 @@ function Hero() {
   );
 }
 
-function Offers() {
-  const [offers, setOffers] = useState(initialOffers);
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  const updateOffer = (id: number, field: keyof Offer, value: string) => {
-    setOffers((current) => current.map((offer) => offer.id === id ? { ...offer, [field]: value } : offer));
-  };
-
+function Offers({ offers, selectedCategory }: { offers: Offer[]; selectedCategory: Category | null }) {
+  const visibleOffers = selectedCategory ? offers.filter((offer) => offer.category === selectedCategory) : offers;
   return (
     <section className="fm-section" id="ofertas" data-testid="section-offers">
       <div className="fm-container">
@@ -177,42 +199,34 @@ function Offers() {
             <span className="fm-eyebrow">Lo que conviene mirar</span>
             <h2 className="fm-section-title">Ofertas de la semana</h2>
           </div>
-          <p className="fm-section-copy">Productos conocidos para una compra rápida. Estos precios son de prueba y están listos para actualizar.</p>
+          <div className="fm-section-tools">
+            <p className="fm-section-copy">Productos conocidos para una compra rápida. Estos precios son de prueba y están listos para actualizar.</p>
+            {selectedCategory && <span className="fm-active-filter">Mostrando: {selectedCategory}</span>}
+          </div>
         </div>
         <div className="fm-offers-grid">
-          {offers.map((offer) => (
+          {visibleOffers.map((offer) => (
             <article className="fm-offer-card" key={offer.id} data-testid={`card-offer-${offer.id}`}>
               <div className="fm-offer-image">
                 <span className="fm-offer-badge">OFERTA</span>
-                <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-offer-${offer.id}`} />
-                <button className="fm-offer-edit" type="button" onClick={() => setEditingId(editingId === offer.id ? null : offer.id)} aria-label={`Editar oferta ${offer.id}`} data-testid={`button-edit-offer-${offer.id}`}>
-                  {editingId === offer.id ? <X size={15} /> : <Edit3 size={15} />}
-                </button>
+                {offer.image ? (
+                  <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-offer-${offer.id}`} />
+                ) : (
+                  <span className="fm-offer-fallback" aria-label={offer.alt}><OfferIcon icon={offer.icon} /></span>
+                )}
               </div>
-              {editingId === offer.id ? (
-                <div className="fm-edit-panel" data-testid={`form-edit-offer-${offer.id}`}>
-                  <input value={offer.name} onChange={(event) => updateOffer(offer.id, 'name', event.target.value)} aria-label="Nombre de la oferta" data-testid={`input-offer-name-${offer.id}`} />
-                  <input value={offer.detail} onChange={(event) => updateOffer(offer.id, 'detail', event.target.value)} aria-label="Detalle de la oferta" data-testid={`input-offer-detail-${offer.id}`} />
-                  <input value={offer.previous} onChange={(event) => updateOffer(offer.id, 'previous', event.target.value)} aria-label="Precio anterior de la oferta" data-testid={`input-offer-previous-${offer.id}`} />
-                  <input value={offer.current} onChange={(event) => updateOffer(offer.id, 'current', event.target.value)} aria-label="Precio nuevo de la oferta" data-testid={`input-offer-current-${offer.id}`} />
-                  <div className="fm-edit-actions">
-                    <button className="fm-mini-action" type="button" onClick={() => setEditingId(null)} data-testid={`button-save-offer-${offer.id}`}><Save size={13} /> Guardar</button>
-                    <button className="fm-mini-action cancel" type="button" onClick={() => setEditingId(null)} data-testid={`button-cancel-offer-${offer.id}`}>Cerrar</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <h3 className="fm-offer-name" data-testid={`text-offer-name-${offer.id}`}>{offer.name}</h3>
-                  <p className="fm-offer-detail" data-testid={`text-offer-detail-${offer.id}`}>{offer.detail}</p>
-                  <div className="fm-price-line">
-                    <span className="fm-price-old" data-testid={`text-offer-previous-${offer.id}`}>{offer.previous}</span>
-                    <span className="fm-price-new" data-testid={`text-offer-current-${offer.id}`}>{offer.current}</span>
-                  </div>
-                </>
-              )}
+              <span className="fm-offer-category">{offer.category}</span>
+              <h3 className="fm-offer-name" data-testid={`text-offer-name-${offer.id}`}>{offer.name}</h3>
+              <p className="fm-offer-detail" data-testid={`text-offer-detail-${offer.id}`}>{offer.detail}</p>
+              {offer.comment && <p className="fm-offer-comment">{offer.comment}</p>}
+              <div className="fm-price-line">
+                <span className="fm-price-old" data-testid={`text-offer-previous-${offer.id}`}>{offer.previous}</span>
+                <span className="fm-price-new" data-testid={`text-offer-current-${offer.id}`}>{offer.current}</span>
+              </div>
             </article>
           ))}
         </div>
+        {visibleOffers.length === 0 && <p className="fm-empty-state">Todavía no hay productos cargados en esta categoría.</p>}
         <p className="fm-confirm-note" data-testid="text-offers-confirmation">* Precios de prueba, sujetos a actualización según las ofertas vigentes.</p>
       </div>
     </section>
@@ -226,7 +240,7 @@ function Delivery() {
         <div>
           <span className="fm-eyebrow">Cuando no podés acercarte</span>
           <h2 className="fm-delivery-title">Los mejores precios - <mark>Más cerca tuyo</mark></h2>
-          <p className="fm-delivery-copy">¿Necesitás hacer un pedido? Escribinos por WhatsApp y consultá el servicio de delivery. La disponibilidad y condiciones están [A CONFIRMAR].</p>
+          <p className="fm-delivery-copy">¿Necesitás hacer un pedido? Escribinos por WhatsApp y consultá la disponibilidad y las condiciones del servicio de delivery.</p>
           <a className="fm-button fm-delivery-action" href={whatsappUrl} target="_blank" rel="noreferrer" data-testid="link-delivery-whatsapp">
             <MessageCircle size={18} /> Escribir por WhatsApp <ArrowRight size={16} />
           </a>
@@ -265,13 +279,12 @@ function Branches() {
   );
 }
 
-function Categories() {
-  const categories = [
+function Categories({ selectedCategory, onSelectCategory }: { selectedCategory: Category | null; onSelectCategory: (category: Category | null) => void }) {
+  const categories: Array<{ label: Category; icon: ReactNode }> = [
     { label: 'Bebidas', icon: <Beer size={36} strokeWidth={1.4} /> },
     { label: 'Lácteos', icon: <Milk size={36} strokeWidth={1.4} /> },
     { label: 'Almacén', icon: <PackageOpen size={36} strokeWidth={1.4} /> },
     { label: 'Congelados', icon: <Snowflake size={36} strokeWidth={1.4} /> },
-    { label: 'Más categorías [A CONFIRMAR]', icon: <ShoppingBasket size={36} strokeWidth={1.4} /> },
   ];
 
   return (
@@ -282,13 +295,16 @@ function Categories() {
             <span className="fm-eyebrow">Para cada compra</span>
             <h2 className="fm-section-title">Lo que buscás,<br />sin dar mil vueltas.</h2>
           </div>
+          <button className="fm-clear-filter" type="button" onClick={() => onSelectCategory(null)} data-testid="button-show-all-products">
+            Ver todos los productos
+          </button>
         </div>
         <div className="fm-category-grid">
           {categories.map((category, index) => (
-            <div className="fm-category" key={category.label} data-testid={`category-${index + 1}`}>
+            <button className={`fm-category ${selectedCategory === category.label ? 'is-selected' : ''}`} type="button" key={category.label} onClick={() => onSelectCategory(category.label)} data-testid={`category-${index + 1}`} aria-pressed={selectedCategory === category.label}>
               <span className="fm-category-icon" aria-hidden="true">{category.icon}</span>
               <span>{category.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -312,7 +328,6 @@ function Contact() {
               <span><Instagram size={19} /> Instagram · @fastmarketjunin</span><ExternalLink size={15} />
             </a>
           </div>
-          <p className="fm-confirm-note" data-testid="text-instagram-confirmation">Instagram: usuario placeholder — [A CONFIRMAR].</p>
         </div>
         <div className="fm-values" data-testid="values-list">
           <div className="fm-values-title">Lo que nos mueve</div>
@@ -322,6 +337,172 @@ function Contact() {
         </div>
       </div>
     </section>
+  );
+}
+
+type OfferDraft = Omit<Offer, 'id'>;
+
+const emptyOfferDraft: OfferDraft = {
+  icon: 'package',
+  image: '',
+  alt: '',
+  name: '',
+  detail: '',
+  previous: '',
+  current: '',
+  category: 'Almacén',
+  comment: '',
+};
+
+function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offers: Offer[]; onChange: (offers: Offer[]) => void; onClose: () => void }) {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [draft, setDraft] = useState<OfferDraft>(emptyOfferDraft);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setAuthenticated(false);
+      setUsername('');
+      setPassword('');
+      setLoginError('');
+      setEditingId(null);
+      setDraft(emptyOfferDraft);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (username === adminUsername && password === adminPassword) {
+      setAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('Usuario o contraseña incorrectos.');
+    }
+  };
+
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setDraft((current) => ({ ...current, image: String(reader.result), alt: current.alt || file.name }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleDraftChange = (field: keyof OfferDraft, value: string) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setDraft(emptyOfferDraft);
+    setEditingId(null);
+    setFormError('');
+  };
+
+  const saveProduct = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!draft.name.trim() || !draft.current.trim()) {
+      setFormError('El nombre y el precio actual son obligatorios.');
+      return;
+    }
+    const product = {
+      ...draft,
+      name: draft.name.trim(),
+      detail: draft.detail.trim() || 'Consultar presentación',
+      alt: draft.alt.trim() || draft.name.trim(),
+      previous: draft.previous.trim() || draft.current.trim(),
+      current: draft.current.trim(),
+      comment: draft.comment?.trim() || '',
+    };
+    if (editingId === null) {
+      onChange([{ ...product, id: Date.now() }, ...offers]);
+    } else {
+      onChange(offers.map((offer) => offer.id === editingId ? { ...product, id: editingId } : offer));
+    }
+    resetForm();
+  };
+
+  const editProduct = (offer: Offer) => {
+    setEditingId(offer.id);
+    setDraft({ ...emptyOfferDraft, ...offer });
+    setFormError('');
+  };
+
+  const deleteProduct = (id: number) => {
+    if (window.confirm('¿Eliminar este producto de la lista?')) {
+      onChange(offers.filter((offer) => offer.id !== id));
+      if (editingId === id) resetForm();
+    }
+  };
+
+  return (
+    <div className="fm-admin-backdrop" role="dialog" aria-modal="true" aria-label="Administración de productos">
+      <section className="fm-admin-panel">
+        <button className="fm-admin-close" type="button" onClick={onClose} aria-label="Cerrar acceso restringido"><X size={20} /></button>
+        {!authenticated ? (
+          <div className="fm-login-card">
+            <span className="fm-admin-kicker"><LockKeyhole size={15} /> Acceso restringido</span>
+            <h2>Administrar productos</h2>
+            <p>Ingresá con tus credenciales para gestionar las ofertas visibles en la web.</p>
+            <form className="fm-login-form" onSubmit={handleLogin}>
+              <label>Usuario<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></label>
+              <label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>
+              {loginError && <p className="fm-form-error">{loginError}</p>}
+              <button className="fm-admin-primary" type="submit">Ingresar <ArrowRight size={16} /></button>
+            </form>
+          </div>
+        ) : (
+          <>
+            <div className="fm-admin-header">
+              <div>
+                <span className="fm-admin-kicker"><LockKeyhole size={15} /> Panel privado</span>
+                <h2>Productos y ofertas</h2>
+                <p>Agregá fotos, precios y comentarios sin tocar las tarjetas públicas.</p>
+              </div>
+              <button className="fm-admin-logout" type="button" onClick={() => setAuthenticated(false)}><LogOut size={15} /> Salir</button>
+            </div>
+            <div className="fm-admin-layout">
+              <form className="fm-product-form" onSubmit={saveProduct}>
+                <div className="fm-form-heading"><span>{editingId === null ? 'Nuevo producto' : 'Editar producto'}</span>{editingId === null ? <Plus size={17} /> : <Save size={16} />}</div>
+                <label>Nombre<input value={draft.name} onChange={(event) => handleDraftChange('name', event.target.value)} placeholder="Ej. Yogur natural" required /></label>
+                <label>Detalle<input value={draft.detail} onChange={(event) => handleDraftChange('detail', event.target.value)} placeholder="Presentación o tamaño" /></label>
+                <label>Categoría<select value={draft.category} onChange={(event) => handleDraftChange('category', event.target.value as Category)}>{(['Bebidas', 'Lácteos', 'Almacén', 'Congelados'] as Category[]).map((category) => <option key={category}>{category}</option>)}</select></label>
+                <div className="fm-form-row">
+                  <label>Precio anterior<input value={draft.previous} onChange={(event) => handleDraftChange('previous', event.target.value)} placeholder="$ 0" /></label>
+                  <label>Precio actual<input value={draft.current} onChange={(event) => handleDraftChange('current', event.target.value)} placeholder="$ 0" required /></label>
+                </div>
+                <label>Comentario opcional<textarea value={draft.comment} onChange={(event) => handleDraftChange('comment', event.target.value)} placeholder="Ej. Solo por esta semana" rows={3} /></label>
+                <label className="fm-file-field"><span>Foto del producto</span><input type="file" accept="image/*" onChange={handlePhotoChange} /><small><ImagePlus size={14} /> JPG, PNG o WebP</small></label>
+                {draft.image && <img className="fm-admin-preview" src={draft.image} alt="Vista previa del producto" />}
+                {formError && <p className="fm-form-error">{formError}</p>}
+                <div className="fm-form-actions">
+                  <button className="fm-admin-primary" type="submit">{editingId === null ? 'Agregar producto' : 'Guardar cambios'} <Save size={15} /></button>
+                  {editingId !== null && <button className="fm-admin-secondary" type="button" onClick={resetForm}>Cancelar</button>}
+                </div>
+              </form>
+              <div className="fm-admin-products">
+                <div className="fm-form-heading"><span>Productos cargados ({offers.length})</span></div>
+                <div className="fm-admin-product-list">
+                  {offers.map((offer) => (
+                    <article className="fm-admin-product-row" key={offer.id}>
+                      <div className="fm-admin-product-thumb">{offer.image ? <img src={offer.image} alt="" /> : <OfferIcon icon={offer.icon} />}</div>
+                      <div className="fm-admin-product-info"><strong>{offer.name}</strong><small>{offer.category} · {offer.current}</small></div>
+                      <button className="fm-admin-icon-button" type="button" onClick={() => editProduct(offer)} aria-label={`Editar ${offer.name}`}><Save size={15} /></button>
+                      <button className="fm-admin-icon-button danger" type="button" onClick={() => deleteProduct(offer.id)} aria-label={`Eliminar ${offer.name}`}><Trash2 size={15} /></button>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -338,14 +519,28 @@ function Footer() {
 }
 
 function Home() {
+  const [offers, setOffers] = useState<Offer[]>(loadOffers);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [adminOpen, setAdminOpen] = useState(false);
+
+  useEffect(() => {
+    window.localStorage.setItem(offersStorageKey, JSON.stringify(offers));
+  }, [offers]);
+
+  const selectCategory = (category: Category | null) => {
+    setSelectedCategory(category);
+    window.setTimeout(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
+
   return (
     <main className="fm-page">
-      <Header />
+      <Header onOpenAdmin={() => setAdminOpen(true)} />
+      <AdminAccess open={adminOpen} offers={offers} onChange={setOffers} onClose={() => setAdminOpen(false)} />
       <Hero />
-      <Offers />
+      <Offers offers={offers} selectedCategory={selectedCategory} />
       <Delivery />
       <Branches />
-      <Categories />
+      <Categories selectedCategory={selectedCategory} onSelectCategory={selectCategory} />
       <Contact />
       <Footer />
     </main>
