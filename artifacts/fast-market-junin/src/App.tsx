@@ -18,8 +18,12 @@ import {
   Save,
   ShoppingBasket,
   Snowflake,
+  Store,
+  Tags,
   Trash2,
   Truck,
+  UserPlus,
+  UsersRound,
   Wine,
   X,
 } from 'lucide-react';
@@ -33,10 +37,13 @@ import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 const queryClient = new QueryClient();
 const whatsappUrl = 'https://wa.me/5492364206053';
 const offersStorageKey = 'fast-market-junin-offers';
+const categoriesStorageKey = 'fast-market-junin-categories';
+const suppliersStorageKey = 'fast-market-junin-suppliers';
+const usersStorageKey = 'fast-market-junin-users';
 const adminUsername = 'admin';
 const adminPassword = 'fastmarket';
 
-type Category = 'Bebidas' | 'Lácteos' | 'Almacén' | 'Congelados';
+type Category = string;
 type Offer = {
   id: number;
   icon: 'basket' | 'milk' | 'beer' | 'package' | 'wine';
@@ -44,20 +51,38 @@ type Offer = {
   alt: string;
   name: string;
   detail: string;
-  previous: string;
-  current: string;
+  price: string;
+  offer?: string;
   category: Category;
+  supplierId?: number;
   comment?: string;
 };
 
+type Supplier = {
+  id: number;
+  name: string;
+  contact?: string;
+};
+
+type AdminUser = {
+  id: number;
+  username: string;
+  password: string;
+  role: string;
+};
+
+const initialCategories: Category[] = ['Bebidas', 'Lácteos', 'Almacén', 'Congelados'];
+const initialSuppliers: Supplier[] = [];
+const initialUsers: AdminUser[] = [{ id: 1, username: adminUsername, password: adminPassword, role: 'Administrador' }];
+
 const initialOffers: Offer[] = [
-  { id: 1, icon: 'package', image: '/products/milka-oreo.jpg', alt: 'Tableta de chocolate Milka Oreo', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', previous: '$ 4.800', current: '$ 3.990', category: 'Almacén' },
-  { id: 2, icon: 'package', image: '/products/bon-o-bon.jpg', alt: 'Pack de chocolates Bon o Bon', name: 'Bon o Bon', detail: 'Pack x 6 unidades', previous: '$ 3.600', current: '$ 2.990', category: 'Almacén' },
-  { id: 3, icon: 'wine', image: '/products/vino-tinto.jpg', alt: 'Botella de vino tinto', name: 'Vino tinto', detail: 'Botella 750 ml', previous: '$ 6.500', current: '$ 5.490', category: 'Bebidas' },
-  { id: 4, icon: 'beer', image: '/products/cerveza-corona.jpg', alt: 'Lata de cerveza Corona Extra', name: 'Cerveza Corona Extra', detail: 'Lata 473 ml', previous: '$ 2.200', current: '$ 1.790', category: 'Bebidas' },
-  { id: 5, icon: 'milk', image: '/products/leche-serenisima.jpg', alt: 'Caja de leche entera La Serenísima', name: 'Leche entera La Serenísima', detail: 'Pack 1 litro', previous: '$ 1.900', current: '$ 1.590', category: 'Lácteos' },
-  { id: 6, icon: 'package', image: '/products/fideos-conzazoni.jpg', alt: 'Paquete de fideos Conzazoni', name: 'Fideos secos', detail: 'Paquete 500 g', previous: '$ 1.700', current: '$ 1.390', category: 'Almacén' },
-  { id: 7, icon: 'basket', image: '/products/papas-mccain.jpg', alt: 'Paquete de papas fritas congeladas McCain', name: 'Papas congeladas McCain', detail: 'Paquete 900 g', previous: '$ 5.900', current: '$ 4.990', category: 'Congelados' },
+  { id: 1, icon: 'package', image: '/products/milka-oreo.jpg', alt: 'Tableta de chocolate Milka Oreo', name: 'Chocolate Milka Oreo', detail: 'Tableta 100 g', price: '$ 4.800', offer: '$ 3.990', category: 'Almacén' },
+  { id: 2, icon: 'package', image: '/products/bon-o-bon.jpg', alt: 'Pack de chocolates Bon o Bon', name: 'Bon o Bon', detail: 'Pack x 6 unidades', price: '$ 3.600', offer: '$ 2.990', category: 'Almacén' },
+  { id: 3, icon: 'wine', image: '/products/vino-tinto.jpg', alt: 'Botella de vino tinto', name: 'Vino tinto', detail: 'Botella 750 ml', price: '$ 6.500', offer: '$ 5.490', category: 'Bebidas' },
+  { id: 4, icon: 'beer', image: '/products/cerveza-corona.jpg', alt: 'Lata de cerveza Corona Extra', name: 'Cerveza Corona Extra', detail: 'Lata 473 ml', price: '$ 2.200', offer: '$ 1.790', category: 'Bebidas' },
+  { id: 5, icon: 'milk', image: '/products/leche-serenisima.jpg', alt: 'Caja de leche entera La Serenísima', name: 'Leche entera La Serenísima', detail: 'Pack 1 litro', price: '$ 1.900', offer: '$ 1.590', category: 'Lácteos' },
+  { id: 6, icon: 'package', image: '/products/fideos-conzazoni.jpg', alt: 'Paquete de fideos Conzazoni', name: 'Fideos secos', detail: 'Paquete 500 g', price: '$ 1.700', offer: '$ 1.390', category: 'Almacén' },
+  { id: 7, icon: 'basket', image: '/products/papas-mccain.jpg', alt: 'Paquete de papas fritas congeladas McCain', name: 'Papas congeladas McCain', detail: 'Paquete 900 g', price: '$ 5.900', offer: '$ 4.990', category: 'Congelados' },
 ];
 
 function loadOffers(): Offer[] {
@@ -66,9 +91,28 @@ function loadOffers(): Offer[] {
     const stored = window.localStorage.getItem(offersStorageKey);
     if (!stored) return initialOffers;
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : initialOffers;
+    if (!Array.isArray(parsed)) return initialOffers;
+    return parsed.map((item) => {
+      const legacy = item as Offer & { previous?: string; current?: string };
+      return {
+        ...legacy,
+        price: legacy.price || legacy.previous || legacy.current || '',
+        offer: legacy.offer || (legacy.previous && legacy.current && legacy.previous !== legacy.current ? legacy.current : ''),
+        category: legacy.category || 'Almacén',
+      };
+    });
   } catch {
     return initialOffers;
+  }
+}
+
+function loadStored<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored ? JSON.parse(stored) as T : fallback;
+  } catch {
+    return fallback;
   }
 }
 
@@ -208,7 +252,7 @@ function Offers({ offers, selectedCategory }: { offers: Offer[]; selectedCategor
           {visibleOffers.map((offer) => (
             <article className="fm-offer-card" key={offer.id} data-testid={`card-offer-${offer.id}`}>
               <div className="fm-offer-image">
-                <span className="fm-offer-badge">OFERTA</span>
+                {offer.offer && <span className="fm-offer-badge">OFERTA</span>}
                 {offer.image ? (
                   <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-offer-${offer.id}`} />
                 ) : (
@@ -220,8 +264,14 @@ function Offers({ offers, selectedCategory }: { offers: Offer[]; selectedCategor
               <p className="fm-offer-detail" data-testid={`text-offer-detail-${offer.id}`}>{offer.detail}</p>
               {offer.comment && <p className="fm-offer-comment">{offer.comment}</p>}
               <div className="fm-price-line">
-                <span className="fm-price-old" data-testid={`text-offer-previous-${offer.id}`}>{offer.previous}</span>
-                <span className="fm-price-new" data-testid={`text-offer-current-${offer.id}`}>{offer.current}</span>
+                {offer.offer ? (
+                  <>
+                    <span className="fm-price-old" data-testid={`text-offer-price-${offer.id}`}>{offer.price}</span>
+                    <span className="fm-price-new" data-testid={`text-offer-offer-${offer.id}`}>{offer.offer}</span>
+                  </>
+                ) : (
+                  <span className="fm-price-new fm-price-single" data-testid={`text-offer-price-${offer.id}`}>{offer.price}</span>
+                )}
               </div>
             </article>
           ))}
@@ -279,13 +329,15 @@ function Branches() {
   );
 }
 
-function Categories({ selectedCategory, onSelectCategory }: { selectedCategory: Category | null; onSelectCategory: (category: Category | null) => void }) {
-  const categories: Array<{ label: Category; icon: ReactNode }> = [
-    { label: 'Bebidas', icon: <Beer size={36} strokeWidth={1.4} /> },
-    { label: 'Lácteos', icon: <Milk size={36} strokeWidth={1.4} /> },
-    { label: 'Almacén', icon: <PackageOpen size={36} strokeWidth={1.4} /> },
-    { label: 'Congelados', icon: <Snowflake size={36} strokeWidth={1.4} /> },
-  ];
+function getCategoryIcon(category: Category) {
+  const normalized = category.toLocaleLowerCase();
+  if (normalized.includes('bebid')) return <Beer size={36} strokeWidth={1.4} />;
+  if (normalized.includes('láct') || normalized.includes('lact')) return <Milk size={36} strokeWidth={1.4} />;
+  if (normalized.includes('congel')) return <Snowflake size={36} strokeWidth={1.4} />;
+  return <PackageOpen size={36} strokeWidth={1.4} />;
+}
+
+function Categories({ categories, selectedCategory, onSelectCategory }: { categories: Category[]; selectedCategory: Category | null; onSelectCategory: (category: Category | null) => void }) {
 
   return (
     <section className="fm-section fm-section-tinted fm-categories" id="categorias" data-testid="section-categories">
@@ -301,9 +353,9 @@ function Categories({ selectedCategory, onSelectCategory }: { selectedCategory: 
         </div>
         <div className="fm-category-grid">
           {categories.map((category, index) => (
-            <button className={`fm-category ${selectedCategory === category.label ? 'is-selected' : ''}`} type="button" key={category.label} onClick={() => onSelectCategory(category.label)} data-testid={`category-${index + 1}`} aria-pressed={selectedCategory === category.label}>
-              <span className="fm-category-icon" aria-hidden="true">{category.icon}</span>
-              <span>{category.label}</span>
+            <button className={`fm-category ${selectedCategory === category ? 'is-selected' : ''}`} type="button" key={category} onClick={() => onSelectCategory(category)} data-testid={`category-${index + 1}`} aria-pressed={selectedCategory === category}>
+              <span className="fm-category-icon" aria-hidden="true">{getCategoryIcon(category)}</span>
+              <span>{category}</span>
             </button>
           ))}
         </div>
@@ -348,20 +400,53 @@ const emptyOfferDraft: OfferDraft = {
   alt: '',
   name: '',
   detail: '',
-  previous: '',
-  current: '',
+  price: '',
+  offer: '',
   category: 'Almacén',
   comment: '',
 };
 
-function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offers: Offer[]; onChange: (offers: Offer[]) => void; onClose: () => void }) {
+type AdminTab = 'products' | 'categories' | 'suppliers' | 'users';
+type SupplierDraft = Omit<Supplier, 'id'>;
+type UserDraft = Omit<AdminUser, 'id'>;
+
+function AdminAccess({
+  open,
+  offers,
+  onChange,
+  categories,
+  onCategoriesChange,
+  suppliers,
+  onSuppliersChange,
+  users,
+  onUsersChange,
+  onClose,
+}: {
+  open: boolean;
+  offers: Offer[];
+  onChange: (offers: Offer[]) => void;
+  categories: Category[];
+  onCategoriesChange: (categories: Category[]) => void;
+  suppliers: Supplier[];
+  onSuppliersChange: (suppliers: Supplier[]) => void;
+  users: AdminUser[];
+  onUsersChange: (users: AdminUser[]) => void;
+  onClose: () => void;
+}) {
   const [authenticated, setAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [activeTab, setActiveTab] = useState<AdminTab>('products');
   const [draft, setDraft] = useState<OfferDraft>(emptyOfferDraft);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formError, setFormError] = useState('');
+  const [categoryDraft, setCategoryDraft] = useState('');
+  const [supplierDraft, setSupplierDraft] = useState<SupplierDraft>({ name: '', contact: '' });
+  const [editingSupplierId, setEditingSupplierId] = useState<number | null>(null);
+  const [userDraft, setUserDraft] = useState<UserDraft>({ username: '', password: '', role: 'Editor' });
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [managementError, setManagementError] = useState('');
 
   useEffect(() => {
     if (!open) {
@@ -369,8 +454,15 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
       setUsername('');
       setPassword('');
       setLoginError('');
+      setActiveTab('products');
       setEditingId(null);
       setDraft(emptyOfferDraft);
+      setCategoryDraft('');
+      setSupplierDraft({ name: '', contact: '' });
+      setEditingSupplierId(null);
+      setUserDraft({ username: '', password: '', role: 'Editor' });
+      setEditingUserId(null);
+      setManagementError('');
     }
   }, [open]);
 
@@ -378,7 +470,7 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
 
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (username === adminUsername && password === adminPassword) {
+    if (users.some((user) => user.username === username && user.password === password)) {
       setAuthenticated(true);
       setLoginError('');
     } else {
@@ -394,7 +486,7 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
     reader.readAsDataURL(file);
   };
 
-  const handleDraftChange = (field: keyof OfferDraft, value: string) => {
+  const handleDraftChange = (field: keyof OfferDraft, value: string | number | undefined) => {
     setDraft((current) => ({ ...current, [field]: value }));
   };
 
@@ -406,8 +498,8 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
 
   const saveProduct = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!draft.name.trim() || !draft.current.trim()) {
-      setFormError('El nombre y el precio actual son obligatorios.');
+    if (!draft.name.trim() || !draft.price.trim()) {
+      setFormError('El nombre y el precio son obligatorios.');
       return;
     }
     const product = {
@@ -415,8 +507,8 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
       name: draft.name.trim(),
       detail: draft.detail.trim() || 'Consultar presentación',
       alt: draft.alt.trim() || draft.name.trim(),
-      previous: draft.previous.trim() || draft.current.trim(),
-      current: draft.current.trim(),
+      price: draft.price.trim(),
+      offer: draft.offer?.trim() || '',
       comment: draft.comment?.trim() || '',
     };
     if (editingId === null) {
@@ -439,6 +531,102 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
       if (editingId === id) resetForm();
     }
   };
+
+  const addCategory = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = categoryDraft.trim();
+    if (!name) return;
+    if (categories.some((category) => category.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      setManagementError('Esa categoría ya existe.');
+      return;
+    }
+    onCategoriesChange([...categories, name]);
+    setCategoryDraft('');
+    setManagementError('');
+  };
+
+  const deleteCategory = (category: Category) => {
+    if (offers.some((offer) => offer.category === category)) {
+      setManagementError('No podés eliminar una categoría que todavía tiene productos.');
+      return;
+    }
+    if (window.confirm(`¿Eliminar la categoría ${category}?`)) {
+      onCategoriesChange(categories.filter((item) => item !== category));
+      setManagementError('');
+    }
+  };
+
+  const saveSupplier = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supplierDraft.name.trim()) {
+      setManagementError('El nombre del proveedor es obligatorio.');
+      return;
+    }
+    const supplier = { name: supplierDraft.name.trim(), contact: supplierDraft.contact?.trim() || '' };
+    if (editingSupplierId === null) {
+      onSuppliersChange([{ ...supplier, id: Date.now() }, ...suppliers]);
+    } else {
+      onSuppliersChange(suppliers.map((item) => item.id === editingSupplierId ? { ...supplier, id: editingSupplierId } : item));
+    }
+    setSupplierDraft({ name: '', contact: '' });
+    setEditingSupplierId(null);
+    setManagementError('');
+  };
+
+  const editSupplier = (supplier: Supplier) => {
+    setSupplierDraft({ name: supplier.name, contact: supplier.contact || '' });
+    setEditingSupplierId(supplier.id);
+    setManagementError('');
+  };
+
+  const deleteSupplier = (id: number) => {
+    if (window.confirm('¿Eliminar este proveedor?')) {
+      onSuppliersChange(suppliers.filter((supplier) => supplier.id !== id));
+      onChange(offers.map((offer) => offer.supplierId === id ? { ...offer, supplierId: undefined } : offer));
+    }
+  };
+
+  const saveUser = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!userDraft.username.trim() || !userDraft.password.trim()) {
+      setManagementError('El usuario y la contraseña son obligatorios.');
+      return;
+    }
+    if (users.some((user) => user.username === userDraft.username.trim() && user.id !== editingUserId)) {
+      setManagementError('Ese usuario ya existe.');
+      return;
+    }
+    const user = { ...userDraft, username: userDraft.username.trim(), password: userDraft.password.trim(), role: userDraft.role.trim() || 'Editor' };
+    if (editingUserId === null) {
+      onUsersChange([{ ...user, id: Date.now() }, ...users]);
+    } else {
+      onUsersChange(users.map((item) => item.id === editingUserId ? { ...user, id: editingUserId } : item));
+    }
+    setUserDraft({ username: '', password: '', role: 'Editor' });
+    setEditingUserId(null);
+    setManagementError('');
+  };
+
+  const editUser = (user: AdminUser) => {
+    setUserDraft({ username: user.username, password: user.password, role: user.role });
+    setEditingUserId(user.id);
+    setManagementError('');
+  };
+
+  const deleteUser = (id: number) => {
+    if (users.length === 1) {
+      setManagementError('Debe quedar al menos un usuario administrador.');
+      return;
+    }
+    if (window.confirm('¿Eliminar este usuario?')) onUsersChange(users.filter((user) => user.id !== id));
+  };
+
+  const tabs: Array<{ id: AdminTab; label: string; icon: ReactNode }> = [
+    { id: 'products', label: 'Productos', icon: <ShoppingBasket size={15} /> },
+    { id: 'categories', label: 'Categorías', icon: <Tags size={15} /> },
+    { id: 'suppliers', label: 'Proveedores', icon: <Store size={15} /> },
+    { id: 'users', label: 'Usuarios', icon: <UsersRound size={15} /> },
+  ];
 
   return (
     <div className="fm-admin-backdrop" role="dialog" aria-modal="true" aria-label="Administración de productos">
@@ -466,39 +654,79 @@ function AdminAccess({ open, offers, onChange, onClose }: { open: boolean; offer
               </div>
               <button className="fm-admin-logout" type="button" onClick={() => setAuthenticated(false)}><LogOut size={15} /> Salir</button>
             </div>
-            <div className="fm-admin-layout">
-              <form className="fm-product-form" onSubmit={saveProduct}>
-                <div className="fm-form-heading"><span>{editingId === null ? 'Nuevo producto' : 'Editar producto'}</span>{editingId === null ? <Plus size={17} /> : <Save size={16} />}</div>
-                <label>Nombre<input value={draft.name} onChange={(event) => handleDraftChange('name', event.target.value)} placeholder="Ej. Yogur natural" required /></label>
-                <label>Detalle<input value={draft.detail} onChange={(event) => handleDraftChange('detail', event.target.value)} placeholder="Presentación o tamaño" /></label>
-                <label>Categoría<select value={draft.category} onChange={(event) => handleDraftChange('category', event.target.value as Category)}>{(['Bebidas', 'Lácteos', 'Almacén', 'Congelados'] as Category[]).map((category) => <option key={category}>{category}</option>)}</select></label>
-                <div className="fm-form-row">
-                  <label>Precio anterior<input value={draft.previous} onChange={(event) => handleDraftChange('previous', event.target.value)} placeholder="$ 0" /></label>
-                  <label>Precio actual<input value={draft.current} onChange={(event) => handleDraftChange('current', event.target.value)} placeholder="$ 0" required /></label>
-                </div>
-                <label>Comentario opcional<textarea value={draft.comment} onChange={(event) => handleDraftChange('comment', event.target.value)} placeholder="Ej. Solo por esta semana" rows={3} /></label>
-                <label className="fm-file-field"><span>Foto del producto</span><input type="file" accept="image/*" onChange={handlePhotoChange} /><small><ImagePlus size={14} /> JPG, PNG o WebP</small></label>
-                {draft.image && <img className="fm-admin-preview" src={draft.image} alt="Vista previa del producto" />}
-                {formError && <p className="fm-form-error">{formError}</p>}
-                <div className="fm-form-actions">
-                  <button className="fm-admin-primary" type="submit">{editingId === null ? 'Agregar producto' : 'Guardar cambios'} <Save size={15} /></button>
-                  {editingId !== null && <button className="fm-admin-secondary" type="button" onClick={resetForm}>Cancelar</button>}
-                </div>
-              </form>
-              <div className="fm-admin-products">
-                <div className="fm-form-heading"><span>Productos cargados ({offers.length})</span></div>
-                <div className="fm-admin-product-list">
-                  {offers.map((offer) => (
-                    <article className="fm-admin-product-row" key={offer.id}>
-                      <div className="fm-admin-product-thumb">{offer.image ? <img src={offer.image} alt="" /> : <OfferIcon icon={offer.icon} />}</div>
-                      <div className="fm-admin-product-info"><strong>{offer.name}</strong><small>{offer.category} · {offer.current}</small></div>
-                      <button className="fm-admin-icon-button" type="button" onClick={() => editProduct(offer)} aria-label={`Editar ${offer.name}`}><Save size={15} /></button>
-                      <button className="fm-admin-icon-button danger" type="button" onClick={() => deleteProduct(offer.id)} aria-label={`Eliminar ${offer.name}`}><Trash2 size={15} /></button>
-                    </article>
-                  ))}
+            <div className="fm-admin-tabs" role="tablist" aria-label="Secciones de administración">
+              {tabs.map((tab) => <button className={activeTab === tab.id ? 'is-active' : ''} type="button" role="tab" aria-selected={activeTab === tab.id} key={tab.id} onClick={() => { setActiveTab(tab.id); setManagementError(''); }}>{tab.icon}{tab.label}</button>)}
+            </div>
+            {managementError && <p className="fm-form-error fm-management-error">{managementError}</p>}
+            {activeTab === 'products' && (
+              <div className="fm-admin-layout">
+                <form className="fm-product-form" onSubmit={saveProduct}>
+                  <div className="fm-form-heading"><span>{editingId === null ? 'Nuevo producto' : 'Editar producto'}</span>{editingId === null ? <Plus size={17} /> : <Save size={16} />}</div>
+                  <label>Nombre<input value={draft.name} onChange={(event) => handleDraftChange('name', event.target.value)} placeholder="Ej. Yogur natural" required /></label>
+                  <label>Detalle<input value={draft.detail} onChange={(event) => handleDraftChange('detail', event.target.value)} placeholder="Presentación o tamaño" /></label>
+                  <label>Categoría<select value={draft.category} onChange={(event) => handleDraftChange('category', event.target.value)}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
+                  <label>Proveedor<select value={draft.supplierId ?? ''} onChange={(event) => handleDraftChange('supplierId', event.target.value ? Number(event.target.value) : undefined)}><option value="">Sin proveedor</option>{suppliers.map((supplier) => <option value={supplier.id} key={supplier.id}>{supplier.name}</option>)}</select></label>
+                  <div className="fm-form-row">
+                    <label>Precio<input value={draft.price} onChange={(event) => handleDraftChange('price', event.target.value)} placeholder="$ 0" required /></label>
+                    <label>Oferta opcional<input value={draft.offer} onChange={(event) => handleDraftChange('offer', event.target.value)} placeholder="$ 0" /></label>
+                  </div>
+                  <label>Comentario opcional<textarea value={draft.comment} onChange={(event) => handleDraftChange('comment', event.target.value)} placeholder="Ej. Solo por esta semana" rows={3} /></label>
+                  <label className="fm-file-field"><span>Foto del producto</span><input type="file" accept="image/*" onChange={handlePhotoChange} /><small><ImagePlus size={14} /> JPG, PNG o WebP</small></label>
+                  {draft.image && <img className="fm-admin-preview" src={draft.image} alt="Vista previa del producto" />}
+                  {formError && <p className="fm-form-error">{formError}</p>}
+                  <div className="fm-form-actions">
+                    <button className="fm-admin-primary" type="submit">{editingId === null ? 'Agregar producto' : 'Guardar cambios'} <Save size={15} /></button>
+                    {editingId !== null && <button className="fm-admin-secondary" type="button" onClick={resetForm}>Cancelar</button>}
+                  </div>
+                </form>
+                <div className="fm-admin-products">
+                  <div className="fm-form-heading"><span>Productos cargados ({offers.length})</span></div>
+                  <div className="fm-admin-product-list">
+                    {offers.map((offer) => (
+                      <article className="fm-admin-product-row" key={offer.id}>
+                        <div className="fm-admin-product-thumb">{offer.image ? <img src={offer.image} alt="" /> : <OfferIcon icon={offer.icon} />}</div>
+                        <div className="fm-admin-product-info"><strong>{offer.name}</strong><small>{offer.category} · {offer.offer ? `${offer.price} / oferta ${offer.offer}` : offer.price}</small></div>
+                        <button className="fm-admin-icon-button" type="button" onClick={() => editProduct(offer)} aria-label={`Editar ${offer.name}`}><Save size={15} /></button>
+                        <button className="fm-admin-icon-button danger" type="button" onClick={() => deleteProduct(offer.id)} aria-label={`Eliminar ${offer.name}`}><Trash2 size={15} /></button>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+            {activeTab === 'categories' && (
+              <div className="fm-admin-layout fm-simple-manager">
+                <form className="fm-product-form" onSubmit={addCategory}>
+                  <div className="fm-form-heading"><span>Nueva categoría</span><Tags size={17} /></div>
+                  <label>Nombre<input value={categoryDraft} onChange={(event) => setCategoryDraft(event.target.value)} placeholder="Ej. Limpieza" required /></label>
+                  <button className="fm-admin-primary" type="submit">Agregar categoría <Plus size={15} /></button>
+                </form>
+                <div className="fm-admin-products"><div className="fm-form-heading"><span>Categorías visibles ({categories.length})</span></div><div className="fm-admin-product-list">{categories.map((category) => <div className="fm-admin-product-row fm-simple-row fm-single-action" key={category}><div className="fm-admin-product-thumb">{getCategoryIcon(category)}</div><div className="fm-admin-product-info"><strong>{category}</strong><small>{offers.filter((offer) => offer.category === category).length} productos</small></div><button className="fm-admin-icon-button danger" type="button" onClick={() => deleteCategory(category)} aria-label={`Eliminar categoría ${category}`}><Trash2 size={15} /></button></div>)}</div></div>
+              </div>
+            )}
+            {activeTab === 'suppliers' && (
+              <div className="fm-admin-layout fm-simple-manager">
+                <form className="fm-product-form" onSubmit={saveSupplier}>
+                  <div className="fm-form-heading"><span>{editingSupplierId === null ? 'Nuevo proveedor' : 'Editar proveedor'}</span><Store size={17} /></div>
+                  <label>Nombre<input value={supplierDraft.name} onChange={(event) => setSupplierDraft({ ...supplierDraft, name: event.target.value })} placeholder="Ej. Distribuidora Norte" required /></label>
+                  <label>Contacto opcional<input value={supplierDraft.contact} onChange={(event) => setSupplierDraft({ ...supplierDraft, contact: event.target.value })} placeholder="Teléfono o email" /></label>
+                  <div className="fm-form-actions"><button className="fm-admin-primary" type="submit">{editingSupplierId === null ? 'Agregar proveedor' : 'Guardar cambios'} <Save size={15} /></button>{editingSupplierId !== null && <button className="fm-admin-secondary" type="button" onClick={() => { setSupplierDraft({ name: '', contact: '' }); setEditingSupplierId(null); }}>Cancelar</button>}</div>
+                </form>
+                <div className="fm-admin-products"><div className="fm-form-heading"><span>Proveedores ({suppliers.length})</span></div><div className="fm-admin-product-list">{suppliers.length === 0 && <p className="fm-empty-state">Todavía no hay proveedores cargados.</p>}{suppliers.map((supplier) => <div className="fm-admin-product-row fm-simple-row" key={supplier.id}><div className="fm-admin-product-thumb"><Store size={19} /></div><div className="fm-admin-product-info"><strong>{supplier.name}</strong><small>{supplier.contact || 'Sin contacto'}</small></div><button className="fm-admin-icon-button" type="button" onClick={() => editSupplier(supplier)} aria-label={`Editar ${supplier.name}`}><Save size={15} /></button><button className="fm-admin-icon-button danger" type="button" onClick={() => deleteSupplier(supplier.id)} aria-label={`Eliminar ${supplier.name}`}><Trash2 size={15} /></button></div>)}</div></div>
+              </div>
+            )}
+            {activeTab === 'users' && (
+              <div className="fm-admin-layout fm-simple-manager">
+                <form className="fm-product-form" onSubmit={saveUser}>
+                  <div className="fm-form-heading"><span>{editingUserId === null ? 'Nuevo usuario' : 'Editar usuario'}</span><UserPlus size={17} /></div>
+                  <label>Usuario<input value={userDraft.username} onChange={(event) => setUserDraft({ ...userDraft, username: event.target.value })} placeholder="Nombre de usuario" required /></label>
+                  <label>Contraseña<input type="password" value={userDraft.password} onChange={(event) => setUserDraft({ ...userDraft, password: event.target.value })} placeholder="Contraseña" required /></label>
+                  <label>Rol<input value={userDraft.role} onChange={(event) => setUserDraft({ ...userDraft, role: event.target.value })} placeholder="Ej. Editor" /></label>
+                  <div className="fm-form-actions"><button className="fm-admin-primary" type="submit">{editingUserId === null ? 'Agregar usuario' : 'Guardar cambios'} <Save size={15} /></button>{editingUserId !== null && <button className="fm-admin-secondary" type="button" onClick={() => { setUserDraft({ username: '', password: '', role: 'Editor' }); setEditingUserId(null); }}>Cancelar</button>}</div>
+                </form>
+                <div className="fm-admin-products"><div className="fm-form-heading"><span>Usuarios autorizados ({users.length})</span></div><div className="fm-admin-product-list">{users.map((user) => <div className="fm-admin-product-row fm-simple-row" key={user.id}><div className="fm-admin-product-thumb"><UsersRound size={19} /></div><div className="fm-admin-product-info"><strong>{user.username}</strong><small>{user.role}</small></div><button className="fm-admin-icon-button" type="button" onClick={() => editUser(user)} aria-label={`Editar ${user.username}`}><Save size={15} /></button><button className="fm-admin-icon-button danger" type="button" onClick={() => deleteUser(user.id)} aria-label={`Eliminar ${user.username}`}><Trash2 size={15} /></button></div>)}</div></div>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -520,12 +748,24 @@ function Footer() {
 
 function Home() {
   const [offers, setOffers] = useState<Offer[]>(loadOffers);
+  const [categories, setCategories] = useState<Category[]>(() => loadStored(categoriesStorageKey, initialCategories));
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => loadStored(suppliersStorageKey, initialSuppliers));
+  const [users, setUsers] = useState<AdminUser[]>(() => loadStored(usersStorageKey, initialUsers));
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(offersStorageKey, JSON.stringify(offers));
   }, [offers]);
+  useEffect(() => {
+    window.localStorage.setItem(categoriesStorageKey, JSON.stringify(categories));
+  }, [categories]);
+  useEffect(() => {
+    window.localStorage.setItem(suppliersStorageKey, JSON.stringify(suppliers));
+  }, [suppliers]);
+  useEffect(() => {
+    window.localStorage.setItem(usersStorageKey, JSON.stringify(users));
+  }, [users]);
 
   const selectCategory = (category: Category | null) => {
     setSelectedCategory(category);
@@ -535,12 +775,23 @@ function Home() {
   return (
     <main className="fm-page">
       <Header onOpenAdmin={() => setAdminOpen(true)} />
-      <AdminAccess open={adminOpen} offers={offers} onChange={setOffers} onClose={() => setAdminOpen(false)} />
+      <AdminAccess
+        open={adminOpen}
+        offers={offers}
+        onChange={setOffers}
+        categories={categories}
+        onCategoriesChange={setCategories}
+        suppliers={suppliers}
+        onSuppliersChange={setSuppliers}
+        users={users}
+        onUsersChange={setUsers}
+        onClose={() => setAdminOpen(false)}
+      />
       <Hero />
       <Offers offers={offers} selectedCategory={selectedCategory} />
       <Delivery />
       <Branches />
-      <Categories selectedCategory={selectedCategory} onSelectCategory={selectCategory} />
+      <Categories categories={categories} selectedCategory={selectedCategory} onSelectCategory={selectCategory} />
       <Contact />
       <Footer />
     </main>

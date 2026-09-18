@@ -102,9 +102,9 @@ a { color: inherit; text-decoration: none; }
   position: sticky; top: 0; z-index: 40; background: rgba(248, 252, 255, .95);
   border-bottom: 1px solid rgba(223,232,221,.85); backdrop-filter: blur(14px);
 }
-.fm-header-inner { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.fm-restricted-link { order: -1; border: 0; padding: 0; background: transparent; color: #7a8996; cursor: pointer; font-size: .64rem; font-weight: 700; letter-spacing: .03em; }
-.fm-restricted-link:hover { color: var(--market-blue); text-decoration: underline; }
+.fm-header-inner { position: relative; min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.fm-restricted-link { position: absolute; top: 3px; left: 50%; z-index: 1; border: 0; padding: 0; background: transparent; color: #8798a5; cursor: pointer; font-size: .46rem; font-weight: 700; letter-spacing: .1em; opacity: .2; text-transform: uppercase; transform: translateX(-50%); transition: opacity .2s ease, color .2s ease; }
+.fm-restricted-link:hover, .fm-restricted-link:focus-visible { color: var(--market-blue); opacity: 1; text-decoration: underline; }
 .fm-logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--app-font-mono); font-weight: 700; letter-spacing: -.06em; }
 .fm-logo-image { width: 42px; height: 42px; object-fit: cover; border-radius: 11px; mix-blend-mode: multiply; }
 .fm-logo-mark {
@@ -188,6 +188,7 @@ a { color: inherit; text-decoration: none; }
 .fm-price-line { display: flex; align-items: end; justify-content: space-between; gap: 6px; }
 .fm-price-old { color: #9aa69e; font-size: .68rem; text-decoration: line-through; }
 .fm-price-new { color: var(--market-green); font-family: var(--app-font-mono); font-size: 1rem; font-weight: 700; text-align: right; }
+.fm-price-single { margin-left: auto; }
 .fm-edit-panel { display: grid; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--market-line); }
 .fm-edit-panel input { width: 100%; padding: 8px 9px; border: 1px solid var(--market-line); border-radius: 8px; background: var(--market-cream); color: var(--market-ink); outline: none; font-size: .74rem; }
 .fm-edit-panel input:focus { border-color: var(--market-green); box-shadow: 0 0 0 3px rgba(26,107,58,.1); }
@@ -265,6 +266,10 @@ a { color: inherit; text-decoration: none; }
 .fm-admin-logout { background: #e8f1f8; color: var(--market-blue-deep); white-space: nowrap; }
 .fm-form-error { margin: 0; color: #b44848 !important; font-size: .72rem !important; font-weight: 700; }
 .fm-admin-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-right: 32px; }
+.fm-admin-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 25px; padding: 6px; border: 1px solid #d5e3ed; border-radius: 13px; background: #edf5fa; }
+.fm-admin-tabs button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 9px; padding: 10px 12px; background: transparent; color: #678093; cursor: pointer; font-size: .72rem; font-weight: 800; }
+.fm-admin-tabs button:hover, .fm-admin-tabs button.is-active { background: #fff; color: var(--market-blue-deep); box-shadow: 0 2px 8px rgba(33,79,124,.1); }
+.fm-management-error { margin-top: 14px !important; }
 .fm-admin-layout { display: grid; grid-template-columns: minmax(250px, .82fr) minmax(300px, 1.18fr); gap: 28px; margin-top: 28px; }
 .fm-product-form, .fm-admin-products { padding: 19px; border: 1px solid #d5e3ed; border-radius: 16px; background: #f1f7fb; }
 .fm-form-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; color: var(--market-blue-deep); font-family: var(--app-font-mono); font-size: .9rem; font-weight: 700; }
@@ -284,6 +289,9 @@ a { color: inherit; text-decoration: none; }
 .fm-admin-icon-button { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid #c7dce9; border-radius: 7px; background: #eff7fc; color: var(--market-blue-deep); cursor: pointer; }
 .fm-admin-icon-button.danger { color: #b44848; }
 .fm-admin-icon-button:hover { background: #dceef9; }
+.fm-simple-manager .fm-admin-products { min-height: 210px; }
+.fm-simple-row { grid-template-columns: 42px minmax(0, 1fr) 30px 30px; }
+.fm-simple-row.fm-single-action { grid-template-columns: 42px minmax(0, 1fr) 30px; }
 
 .fm-footer { padding: 24px 0; background: var(--market-green-deep); color: #c9dfc9; }
 .fm-footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
@@ -326,7 +334,7 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 520px) {
   .fm-header-inner { gap: 9px; }
-  .fm-restricted-link { font-size: .57rem; }
+  .fm-restricted-link { top: 2px; font-size: .4rem; }
   .fm-top-cta { padding: 10px 11px; font-size: .68rem; }
   .fm-admin-backdrop { padding: 10px; }
   .fm-admin-panel { max-height: calc(100vh - 20px); padding: 21px 16px; border-radius: 18px; }
