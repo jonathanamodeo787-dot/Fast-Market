@@ -169,6 +169,7 @@ function Header({ onOpenAdmin }: { onOpenAdmin: () => void }) {
         </a>
         <nav className={`fm-nav ${menuOpen ? 'fm-nav-open' : ''}`} aria-label="Navegación principal">
           <a href="#ofertas" onClick={closeMenu} data-testid="link-nav-ofertas">Ofertas</a>
+           <a href="#catalogo" onClick={closeMenu} data-testid="link-nav-catalogo">Catálogo</a>
           <a href="#delivery" onClick={closeMenu} data-testid="link-nav-delivery">Delivery</a>
           <a href="#sucursales" onClick={closeMenu} data-testid="link-nav-sucursales">Sucursales</a>
           <a href="#contacto" onClick={closeMenu} data-testid="link-nav-contacto">Contacto</a>
@@ -186,6 +187,7 @@ function Header({ onOpenAdmin }: { onOpenAdmin: () => void }) {
         <div className="fm-container md:hidden" style={{ paddingBottom: 18 }}>
           <div className="fm-nav" style={{ display: 'grid', gap: 13, paddingTop: 10 }}>
             <a href="#ofertas" onClick={closeMenu} data-testid="link-mobile-ofertas">Ofertas</a>
+            <a href="#catalogo" onClick={closeMenu} data-testid="link-mobile-catalogo">Catálogo</a>
             <a href="#delivery" onClick={closeMenu} data-testid="link-mobile-delivery">Delivery</a>
             <a href="#sucursales" onClick={closeMenu} data-testid="link-mobile-sucursales">Sucursales</a>
             <a href="#contacto" onClick={closeMenu} data-testid="link-mobile-contacto">Contacto</a>
@@ -233,8 +235,41 @@ function Hero() {
   );
 }
 
+function ProductGrid({ products, testIdPrefix }: { products: Offer[]; testIdPrefix: string }) {
+  return (
+    <div className="fm-offers-grid">
+      {products.map((offer) => (
+        <article className="fm-offer-card" key={offer.id} data-testid={`card-${testIdPrefix}-${offer.id}`}>
+          <div className="fm-offer-image">
+            {offer.offer && <span className="fm-offer-badge">OFERTA</span>}
+            {offer.image ? (
+              <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-${testIdPrefix}-${offer.id}`} />
+            ) : (
+              <span className="fm-offer-fallback" aria-label={offer.alt}><OfferIcon icon={offer.icon} /></span>
+            )}
+          </div>
+          <span className="fm-offer-category">{offer.category}</span>
+          <h3 className="fm-offer-name" data-testid={`text-${testIdPrefix}-name-${offer.id}`}>{offer.name}</h3>
+          <p className="fm-offer-detail" data-testid={`text-${testIdPrefix}-detail-${offer.id}`}>{offer.detail}</p>
+          {offer.comment && <p className="fm-offer-comment">{offer.comment}</p>}
+          <div className="fm-price-line">
+            {offer.offer ? (
+              <>
+                <span className="fm-price-old" data-testid={`text-${testIdPrefix}-price-${offer.id}`}>{offer.price}</span>
+                <span className="fm-price-new" data-testid={`text-${testIdPrefix}-offer-${offer.id}`}>{offer.offer}</span>
+              </>
+            ) : (
+              <span className="fm-price-new fm-price-single" data-testid={`text-${testIdPrefix}-price-${offer.id}`}>{offer.price}</span>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function Offers({ offers, selectedCategory }: { offers: Offer[]; selectedCategory: Category | null }) {
-  const visibleOffers = selectedCategory ? offers.filter((offer) => offer.category === selectedCategory) : offers;
+  const visibleOffers = offers.filter((offer) => offer.offer && (!selectedCategory || offer.category === selectedCategory));
   return (
     <section className="fm-section" id="ofertas" data-testid="section-offers">
       <div className="fm-container">
@@ -248,36 +283,31 @@ function Offers({ offers, selectedCategory }: { offers: Offer[]; selectedCategor
             {selectedCategory && <span className="fm-active-filter">Mostrando: {selectedCategory}</span>}
           </div>
         </div>
-        <div className="fm-offers-grid">
-          {visibleOffers.map((offer) => (
-            <article className="fm-offer-card" key={offer.id} data-testid={`card-offer-${offer.id}`}>
-              <div className="fm-offer-image">
-                {offer.offer && <span className="fm-offer-badge">OFERTA</span>}
-                {offer.image ? (
-                  <img className="fm-product-image" src={offer.image} alt={offer.alt} data-testid={`img-offer-${offer.id}`} />
-                ) : (
-                  <span className="fm-offer-fallback" aria-label={offer.alt}><OfferIcon icon={offer.icon} /></span>
-                )}
-              </div>
-              <span className="fm-offer-category">{offer.category}</span>
-              <h3 className="fm-offer-name" data-testid={`text-offer-name-${offer.id}`}>{offer.name}</h3>
-              <p className="fm-offer-detail" data-testid={`text-offer-detail-${offer.id}`}>{offer.detail}</p>
-              {offer.comment && <p className="fm-offer-comment">{offer.comment}</p>}
-              <div className="fm-price-line">
-                {offer.offer ? (
-                  <>
-                    <span className="fm-price-old" data-testid={`text-offer-price-${offer.id}`}>{offer.price}</span>
-                    <span className="fm-price-new" data-testid={`text-offer-offer-${offer.id}`}>{offer.offer}</span>
-                  </>
-                ) : (
-                  <span className="fm-price-new fm-price-single" data-testid={`text-offer-price-${offer.id}`}>{offer.price}</span>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-        {visibleOffers.length === 0 && <p className="fm-empty-state">Todavía no hay productos cargados en esta categoría.</p>}
+        <ProductGrid products={visibleOffers} testIdPrefix="offer" />
+        {visibleOffers.length === 0 && <p className="fm-empty-state">Todavía no hay ofertas cargadas en esta categoría.</p>}
         <p className="fm-confirm-note" data-testid="text-offers-confirmation">* Precios de prueba, sujetos a actualización según las ofertas vigentes.</p>
+      </div>
+    </section>
+  );
+}
+
+function Catalog({ offers, selectedCategory }: { offers: Offer[]; selectedCategory: Category | null }) {
+  const visibleProducts = selectedCategory ? offers.filter((offer) => offer.category === selectedCategory) : offers;
+  return (
+    <section className="fm-section fm-catalog" id="catalogo" data-testid="section-catalog">
+      <div className="fm-container">
+        <div className="fm-section-head">
+          <div>
+            <span className="fm-eyebrow">Todo el surtido</span>
+            <h2 className="fm-section-title">Catálogo completo</h2>
+          </div>
+          <div className="fm-section-tools">
+            <p className="fm-section-copy">Conocé todos los productos disponibles, con su precio habitual y las ofertas vigentes.</p>
+            {selectedCategory && <span className="fm-active-filter">Mostrando: {selectedCategory}</span>}
+          </div>
+        </div>
+        <ProductGrid products={visibleProducts} testIdPrefix="catalog" />
+        {visibleProducts.length === 0 && <p className="fm-empty-state">Todavía no hay productos cargados en esta categoría.</p>}
       </div>
     </section>
   );
@@ -347,8 +377,8 @@ function Categories({ categories, selectedCategory, onSelectCategory }: { catego
             <span className="fm-eyebrow">Para cada compra</span>
             <h2 className="fm-section-title">Lo que buscás,<br />sin dar mil vueltas.</h2>
           </div>
-          <button className="fm-clear-filter" type="button" onClick={() => onSelectCategory(null)} data-testid="button-show-all-products">
-            Ver todos los productos
+           <button className="fm-clear-filter" type="button" onClick={() => onSelectCategory(null)} data-testid="button-show-all-products">
+             Ver catálogo completo
           </button>
         </div>
         <div className="fm-category-grid">
@@ -769,7 +799,7 @@ function Home() {
 
   const selectCategory = (category: Category | null) => {
     setSelectedCategory(category);
-    window.setTimeout(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+     window.setTimeout(() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   return (
@@ -789,6 +819,7 @@ function Home() {
       />
       <Hero />
       <Offers offers={offers} selectedCategory={selectedCategory} />
+      <Catalog offers={offers} selectedCategory={selectedCategory} />
       <Delivery />
       <Branches />
       <Categories categories={categories} selectedCategory={selectedCategory} onSelectCategory={selectCategory} />

@@ -165,6 +165,7 @@ a { color: inherit; text-decoration: none; }
 .fm-sign-sub { color: var(--market-muted); font-size: .75rem; text-align: center; }
 
 .fm-section { padding: 80px 0; }
+.fm-catalog { border-top: 1px solid var(--market-line); background: var(--market-paper); }
 .fm-section-tinted { background: #eef5fb; }
 .fm-section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 31px; }
 .fm-offers-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
